@@ -22,7 +22,10 @@ fy = sympy.diff(f, 'y')
 gx = sympy.diff(g, 'x')
 gy = sympy.diff(g, 'y')
 
-print(f'f(x, y) = {f}, g(x, y) = {g}')
+print(f'f(x, y) = {f}')
+print(f'g(x, y) = {g}')
+print(f'x0 = {x0}, y0 = {y0}')
+print()
 print(f'fx = {fx}, fy = {fy}')
 print(f'gx = {gx}, gy = {gy}')
 
@@ -31,9 +34,12 @@ values = sympy.Matrix([f, g])
 
 delta = jacobian.inv() * (-values)
 
+f_lambda = sympy.lambdify(('x', 'y'), f, 'numpy')
+g_lambda = sympy.lambdify(('x', 'y'), g, 'numpy')
+
 plt.style.use('bmh')
 
-figure, ax = plt.subplots()
+figure, ax = plt.subplots(1, 1, figsize=(10, 8))
 figure.subplots_adjust(bottom=0.2)
 ax.axes.set_aspect('equal')
 
@@ -50,24 +56,28 @@ y_space = np.linspace(axis_start, axis_end, int(axis_points))
 
 x_mesh, y_mesh = np.meshgrid(x_space, y_space)
 
-f_lambda = sympy.lambdify(('x', 'y'), f, 'numpy')
-g_lambda = sympy.lambdify(('x', 'y'), g, 'numpy')
-
 ax.contour(x_mesh, y_mesh, f_lambda(x_mesh, y_mesh), levels=[0], colors='g')
 ax.contour(x_mesh, y_mesh, g_lambda(x_mesh, y_mesh), levels=[0], colors='b')
 
-point, = ax.plot(x0, y0, 'ro')
+previous_points, = ax.plot([], [], 'yo')
+current_points, = ax.plot(x0, y0, 'ro')
 
 def update(_):
     x = x0
     y = y0
 
-    for _ in range(iteration.val):
-        x = x + delta[0].subs({'x': x, 'y': y})
-        y = y + delta[1].subs({'x': x, 'y': y})
+    x_data = []
+    y_data = []
 
-    point.set_xdata([x])
-    point.set_ydata([y])
+    for _ in range(iteration.val):
+        x_data.append(x)
+        y_data.append(y)
+
+        x += float(delta[0].subs({'x': x, 'y': y}))
+        y += float(delta[1].subs({'x': x, 'y': y}))
+        
+    previous_points.set_data(x_data, y_data)
+    current_points.set_data([x], [y])
 
     figure.canvas.draw_idle()
 
